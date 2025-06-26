@@ -1,30 +1,24 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Auth\SsoController;
+use App\Http\Controllers\DashboardController;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
 
 Route::get('/', function () {
     return view('welcome');
 });
 
 
-Route::get('/redirect', function (Request $request) {
-    $request->session()->put('state', $state = Str::random(40));
+Route::get('/redirect', [SsoController::class, 'redrictToSso'])->name('login');
 
-    $query = http_build_query([
-        'client_id' => '0197a60c-11df-70a7-85e9-c608dbe1113e',
-        'redirect_uri' => 'http://127.0.0.1:8080/callback',
-        'response_type' => 'code',
-        'scope' => '',
-        'state' => $state,
+Route::get('/callback', [SsoController::class, 'callback'])->name('callback');
 
-    ]);
-
-    return redirect('http://127.0.0.1:8000/oauth/authorize?' . $query);
-})->name('login');
-
-Route::get('/callback', function (Illuminate\Http\Request $request) {
-    // Handle the callback logic here
-    return response()->json($request->all());
+Route::group(['middleware' => ['web', 'auth', 'throttle:10,1']], function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::post('/logout', [SsoController::class, 'logout'])->name('logout');
 });
+
+
+ 
